@@ -115,15 +115,16 @@ def plot_triangle_points(vertices, n_points):
         count = sum(1 for p in triangle_points if point_in_square(p, center, half_size))
         counts.append(count)
 
-    max_count = max(counts)
-    min_count = min(counts)
-    rel_diff = (max_count - min_count) / max_count * 100 if max_count > 0 else 0
+    mean_count = np.mean(counts)
+    deviations = [abs(c - mean_count) / mean_count * 100 for c in counts]
+    max_deviation = max(deviations)
 
     print(f"\n=== Треугольник ===")
     print(f"Площадь каждого квадрата: {(2 * half_size) ** 2:.2f}")
     for i, count in enumerate(counts, 1):
         print(f"Количество точек в квадрате {i} (центр {squares[i - 1]}): {count}")
-    print(f"Максимальная относительная разница: {rel_diff:.2f}%")
+    print(f"Среднее количество: {mean_count:.1f}")
+    print(f"Максимальное отклонение от среднего: {max_deviation:.2f}%")
 
     if not SHOW_PLOTS:
         print("(График пропущен: SHOW_PLOTS = False)")
@@ -189,15 +190,16 @@ def plot_circle_points(normal, radius, center, n_points):
         count = sum(1 for p in circle_points if point_in_square(p[:2], sq_center, square_half_size))
         counts.append(count)
 
-    max_count = max(counts)
-    min_count = min(counts)
-    rel_diff = (max_count - min_count) / max_count * 100 if max_count > 0 else 0
+    mean_count = np.mean(counts)
+    deviations = [abs(c - mean_count) / mean_count * 100 for c in counts]
+    max_deviation = max(deviations)
 
     print(f"\n=== Круг ===")
     print(f"Площадь каждого квадрата: {(2 * square_half_size) ** 2:.2f}")
     for i, count in enumerate(counts, 1):
         print(f"Количество точек в квадрате {i} (центр {squares[i - 1]}): {count}")
-    print(f"Максимальная относительная разница: {rel_diff:.2f}%")
+    print(f"Среднее количество: {mean_count:.1f}")
+    print(f"Максимальное отклонение от среднего: {max_deviation:.2f}%")
 
     if not SHOW_PLOTS:
         print("(График пропущен: SHOW_PLOTS = False)")
@@ -279,15 +281,16 @@ def plot_sphere_points(radius, center, n_points):
                     if in_spherical_circle(p, circle["center_dir"], circle["cos_theta_max"]))
         counts.append(count)
 
-    max_count = max(counts)
-    min_count = min(counts)
-    rel_diff = (max_count - min_count) / max_count * 100 if max_count > 0 else 0
+    mean_count = np.mean(counts)
+    deviations = [abs(c - mean_count) / mean_count * 100 for c in counts]
+    max_deviation = max(deviations)
 
     print(f"\n=== Сфера (равномерное распределение) ===")
     print(f"Площадь каждого сферического круга: {2 * np.pi * radius ** 2 * (1 - cos_theta_max_fixed):.2f}")
     for i, (circle, count) in enumerate(zip(circles, counts), 1):
         print(f"Круг {i} ({circle['name']}): {count} точек")
-    print(f"Максимальная относительная разница: {rel_diff:.2f}%")
+    print(f"Среднее количество: {mean_count:.1f}")
+    print(f"Максимальное отклонение от среднего: {max_deviation:.2f}%")
 
     if not SHOW_PLOTS:
         print("(График пропущен: SHOW_PLOTS = False)")
@@ -372,15 +375,21 @@ def plot_cosine_directions(normal, center, n_points):
                     if in_spherical_circle(p, circle["center_dir"], circle["cos_theta_max"]))
         counts.append(count)
 
-    max_count = max(counts)
-    min_count = min(counts)
-    rel_diff = (max_count - min_count) / max_count * 100 if max_count > 0 else 0
+    # Теоретические ожидания (нормализованные)
+    cos_angles = [1.0, 0.0, np.cos(np.pi / 4)]  # cos(0°), cos(90°), cos(45°)
+    expected = np.array(cos_angles) / np.sum(cos_angles) * np.sum(counts)
+
+    # Отклонения от теоретического ожидания
+    deviations = [abs(counts[i] - expected[i]) / expected[i] * 100 if expected[i] > 0 else 0
+                  for i in range(len(counts))]
+    max_deviation = max(deviations)
 
     print(f"\n=== Косинусное распределение ===")
     print("Ожидается убывание точек при удалении от нормали")
     for i, (circle, count) in enumerate(zip(circles, counts), 1):
-        print(f"Область {i} ({circle['name']}): {count} точек")
-    print(f"Максимальная относительная разница: {rel_diff:.2f}%")
+        exp_val = expected[i - 1]
+        print(f"Область {i} ({circle['name']}): {count} точек (теоретически: {exp_val:.0f})")
+    print(f"Максимальное отклонение от теоретического: {max_deviation:.2f}%")
 
     if counts[0] > counts[1] and counts[0] > counts[2]:
         print("✓ Распределение корректное: больше точек у нормали")
